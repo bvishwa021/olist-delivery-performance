@@ -112,10 +112,11 @@ images/      screenshots
 
 ## Running it
 
-1. Install PostgreSQL 17 and create a database called `olist`.
-2. Run the scripts in `sql/` in numbered order. They create the `raw` and `clean` schemas, load the CSVs from `data/`, and build the views.
+1. Download the dataset from Kaggle and extract the CSVs into data/. The geolocation file isn't used.
+2. Install PostgreSQL 17 and create a database called `olist`.
+3. Run the scripts in `sql/` in numbered order. They create the `raw` and `clean` schemas, load the CSVs from `data/`, and build the views.
    - `\copy` paths are absolute — edit them to match your data directory.
-3. Open `report/olist-delivery-performance.pbip` in Power BI Desktop and point the PostgreSQL connection at `localhost:5432`.
+4. Open `report/olist-delivery-performance.pbip` in Power BI Desktop and point the PostgreSQL connection at `localhost:5432`.
 
 To view the report without a database, open the `.pbix` instead. Import mode means the data is cached inside it.
 
