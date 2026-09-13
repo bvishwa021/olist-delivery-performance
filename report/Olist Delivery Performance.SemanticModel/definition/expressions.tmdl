@@ -1,0 +1,14 @@
+expression Reviews =
+		let
+		    Source = PostgreSQL.Database("localhost", "olist"),
+		    clean_reviews = Source{[Schema="clean",Item="reviews"]}[Data],
+		    #"Kept Analysis Columns" = Table.SelectColumns(clean_reviews,{"order_id", "review_score"}),
+		    #"Kept Model Names" = Table.RenameColumns(#"Kept Analysis Columns",{{"order_id", "Order ID"}, {"review_score", "Review Score"}})
+		in
+		    #"Kept Model Names"
+	lineageTag: 9f45ecf3-91fa-4813-89d8-99c4a73c259a
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

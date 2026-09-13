@@ -1,0 +1,27 @@
+# Power BI Desktop local cache and user state — never commit these.
+# They are machine-specific, can be large, and may contain cached credentials.
+.pbi/localSettings.json
+.pbi/cache.abf
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+*.pbix.tmp
+*.pbip.tmp
+
+# Power BI temp files
+~$*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+
+# Editor noise
+.vscode/
+.idea/
+*.swp
+
+**/.pbi/
+
+data/*.csv

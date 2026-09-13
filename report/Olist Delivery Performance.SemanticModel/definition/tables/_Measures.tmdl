@@ -1,0 +1,149 @@
+table _Measures
+	lineageTag: b8350966-090b-4113-85ee-439b87a644b9
+
+	measure 'Total Orders' = ```
+			COUNTROWS(Orders) 
+			```
+		formatString: #,0
+		displayFolder: Base
+		lineageTag: 59e6d1ed-9df3-4688-8b3d-fa5fd3009533
+
+	measure 'Late Orders' = CALCULATE([Total Orders], Orders[Is Late] = TRUE())
+		formatString: #,0
+		displayFolder: Base
+		lineageTag: 9d7baadf-7199-453b-adfd-c887e99f2fee
+
+	measure 'Reviewed Orders' = CALCULATE([Total Orders], NOT ISBLANK(Orders[Review Score]))
+		formatString: #,0
+		displayFolder: Base
+		lineageTag: c733ddbe-65cf-498e-a2b5-010f30917722
+
+	measure 'Late Delivery Rate' = DIVIDE([Late Orders], [Total Orders])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Delivery
+		lineageTag: 0ec6175a-6279-40ec-993c-04ef4a7f945a
+
+	measure 'Late Orders by Seller' = CALCULATE([Late Orders], CROSSFILTER('Order Items'[Order ID], Orders[Order ID], Both))
+		formatString: 0
+		displayFolder: Delivery
+		lineageTag: 428912bd-39ee-45d4-8fb9-3b3ce7866da4
+
+	measure 'Avg Review Score' = AVERAGE(Orders[Review Score])
+		formatString: 0.00
+		displayFolder: Reviews
+		lineageTag: 50d78571-6aeb-401d-8a40-99774188d806
+
+	measure 'Avg Review Score - Late' = CALCULATE([Avg Review Score], Orders[Is Late] = TRUE())
+		formatString: 0.00
+		displayFolder: Reviews
+		lineageTag: 0db6828b-7ff8-4874-83f4-c276e69a9b21
+
+	measure 'Avg Review Score - On Time' = CALCULATE([Avg Review Score], Orders[Is Late] = FALSE())
+		formatString: 0.00
+		displayFolder: Reviews
+		lineageTag: cf922ee6-11bc-408d-9c9c-212b9a5c956a
+
+	measure 'Total Revenue' = SUMX('Order Items', 'Order Items'[Price])
+		formatString: #,0.00
+		displayFolder: Base
+		lineageTag: 8f1c3f26-c755-4880-a64e-00e572f57aa6
+
+	measure 'Total Order Value' = SUMX('Order Items', 'Order Items'[Price] + 'Order Items'[Freight])
+		formatString: #,0.00
+		displayFolder: Base
+		lineageTag: 9f289001-ff13-405a-b50a-2f9ce6edc8aa
+
+	measure 'Avg Days Late' = AVERAGE(Orders[Days Late])
+		formatString: 0.0
+		displayFolder: Delivery
+		lineageTag: c397b2ec-44cc-43b8-85ed-75dc7cb48468
+
+	measure 'Avg Days Late When Late' = CALCULATE([Avg Days Late], Orders[Is Late] = TRUE())
+		formatString: 0.0
+		displayFolder: Delivery
+		lineageTag: 3e94a504-e22b-4b27-9287-af50c59fd535
+
+	measure 'Late Orders by Delivery Date' = CALCULATE([Late Orders], USERELATIONSHIP(Orders[Delivery Date], 'Date'[Date]))
+		formatString: 0
+		displayFolder: Delivery
+		lineageTag: b8d37df9-d982-4414-aa6b-eb8c37b46302
+
+	measure 'Late Orders All States' = CALCULATE([Late Orders], ALL(Customers[State]))
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Delivery
+		lineageTag: f01f7f08-587b-42d8-88a0-52778532f05c
+
+	measure 'Pct of All Late Orders' = DIVIDE([Late Orders], [Late Orders All States])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Delivery
+		lineageTag: 1474083f-f0d2-4272-b4af-125ae2f1db38
+
+	measure 'Late Orders All Sellers' = CALCULATE([Late Orders by Seller], ALLEXCEPT(Sellers, Sellers[State]))
+		formatString: 0
+		displayFolder: Delivery
+		lineageTag: efb58849-8210-4696-a9dc-06aa7f4dae4b
+
+	measure 'Worst State Late Rate' = MAXX(ALL(Customers[State]), [Late Delivery Rate])
+		displayFolder: Delivery
+		lineageTag: 8fdf2ea2-fc69-4fca-8fea-385c629c2e73
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Worst State' =
+			
+			VAR RankedStates =
+			    ADDCOLUMNS (
+			        ALL ( Customers[State] ),
+			        "@Rate", [Late Delivery Rate]
+			    )
+			RETURN
+			    MAXX (
+			        FILTER ( RankedStates, [@Rate] = [Worst State Late Rate] ),
+			        Customers[State]
+			    )
+		displayFolder: Delivery
+		lineageTag: 94b204e7-1173-44ed-abda-31a59ce4e498
+
+	measure 'Late Delivery Rate (Min 100 Orders)' = IF([Total Orders]>=100, [Late Delivery Rate])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Delivery
+		lineageTag: 1908ce2c-e9a5-41d3-b0fb-a312c59e5cc1
+
+	measure 'Review Score Gap' = [Avg Review Score - On Time] - [Avg Review Score - Late]
+		formatString: 0.00
+		displayFolder: Reviews
+		lineageTag: fc95a101-33bb-466f-8fae-ab749f33fdd7
+
+	measure 'Total Orders by Seller' = CALCULATE([Total Orders], CROSSFILTER('Order Items'[Order ID], Orders[Order ID], Both))
+		formatString: 0
+		lineageTag: 19ad1b7e-8f39-425c-b151-1cad4c77f5f1
+
+	measure 'Late Delivery Rate by Seller' = DIVIDE([Late Orders by Seller], [Total Orders by Seller])
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d0f6484d-bbf8-4923-800a-3100297c8bc6
+
+	measure 'Selected State' = "Delivery Detail - " & SELECTEDVALUE(Customers[State], "All States")
+		lineageTag: 8edaea38-305c-4dae-8c48-b6ddc00fc7c1
+
+	column Column1
+		dataType: string
+		isHidden
+		lineageTag: 1ac1d852-1183-4fb0-87eb-5687440c6a6d
+		summarizeBy: none
+		sourceColumn: Column1
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

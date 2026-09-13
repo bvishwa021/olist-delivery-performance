@@ -1,0 +1,37 @@
+table Products
+	lineageTag: 6ec14009-c043-4715-a3a8-b50fc537ca94
+
+	column 'Product ID'
+		dataType: string
+		isHidden
+		lineageTag: bf14e0f5-65cd-49d0-b6b5-fcced430f726
+		summarizeBy: none
+		sourceColumn: Product ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		lineageTag: e042cac3-dcf9-49f7-a63f-5e103d5b18aa
+		summarizeBy: none
+		sourceColumn: Category
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Products = m
+		mode: import
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost", "olist"),
+				    clean_products = Source{[Schema="clean",Item="products"]}[Data],
+				    #"Kept Analysis Columns" = Table.SelectColumns(clean_products,{"product_id", "product_category"}),
+				    #"Kept Model Names" = Table.RenameColumns(#"Kept Analysis Columns",{{"product_id", "Product ID"}, {"product_category", "Category"}})
+				in
+				    #"Kept Model Names"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

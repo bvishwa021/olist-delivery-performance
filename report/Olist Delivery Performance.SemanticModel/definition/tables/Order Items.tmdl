@@ -1,0 +1,87 @@
+table 'Order Items'
+	lineageTag: 6c3522ef-f5a7-4159-bcd0-62a7612ee731
+
+	column 'Order ID'
+		dataType: string
+		isHidden
+		lineageTag: 870a7ab0-35d7-4969-bf2b-6a05719bd2ec
+		summarizeBy: none
+		sourceColumn: Order ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Item Number'
+		dataType: int64
+		formatString: 0
+		lineageTag: 2991fb3b-d26d-4adf-88e4-b07272ac21cc
+		summarizeBy: sum
+		sourceColumn: Item Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product ID'
+		dataType: string
+		isHidden
+		lineageTag: c118cae5-0651-47c4-b088-971748f1363f
+		summarizeBy: none
+		sourceColumn: Product ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Seller ID'
+		dataType: string
+		isHidden
+		lineageTag: 47b6ccfc-55e6-4cf7-9709-68269822bbd0
+		summarizeBy: none
+		sourceColumn: Seller ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Price
+		dataType: decimal
+		formatString: "₹"\ #,0.###############;#,0.###############\ -"₹";"₹"\ #,0.###############
+		lineageTag: e585e269-f189-4462-a147-ce9082a85125
+		summarizeBy: sum
+		sourceColumn: Price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-IN"}
+
+	column Freight
+		dataType: decimal
+		formatString: "₹"\ #,0.###############;#,0.###############\ -"₹";"₹"\ #,0.###############
+		lineageTag: 47396225-58aa-44fd-9261-25780af54de3
+		summarizeBy: sum
+		sourceColumn: Freight
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-IN"}
+
+	partition 'Order Items' = m
+		mode: import
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost", "olist"),
+				    clean_order_items = Source{[Schema="clean",Item="order_items"]}[Data],
+				    #"Kept Analysis Columns" = Table.SelectColumns(clean_order_items,{"order_id", "order_item_id", "product_id", "seller_id", "price", "freight_value"}),
+				    // Inner Joined with orders to filter rows to keep only delivered order items.
+				    #"Kept Delivered Rows" = Table.NestedJoin(#"Kept Analysis Columns", {"order_id"}, Orders, {"Order ID"}, "clean orders", JoinKind.Inner),
+				    #"Removed Merge Columns" = Table.RemoveColumns(#"Kept Delivered Rows",{"clean orders"}),
+				    // Decimal Number is 64-bit which is approximate, fixed decimal is exactly 4 decimal places and can do exact arithmetic.
+				    #"Money and Freight to Fixed Decimal" = Table.TransformColumnTypes(#"Removed Merge Columns",{{"price", Currency.Type}, {"freight_value", Currency.Type}}),
+				    #"Kept Model Names" = Table.RenameColumns(#"Money and Freight to Fixed Decimal",{{"order_id", "Order ID"}, {"order_item_id", "Item Number"}, {"product_id", "Product ID"}, {"seller_id", "Seller ID"}, {"price", "Price"}, {"freight_value", "Freight"}})
+				in
+				    #"Kept Model Names"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

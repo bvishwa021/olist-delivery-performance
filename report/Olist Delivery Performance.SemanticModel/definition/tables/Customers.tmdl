@@ -1,0 +1,53 @@
+table Customers
+	lineageTag: 1a52d746-f613-42b2-9b80-319258f399c2
+
+	column 'Customer ID'
+		dataType: string
+		isHidden
+		lineageTag: d5bc6aa3-a457-40c3-9ed1-5e42ce51bbdd
+		summarizeBy: none
+		sourceColumn: Customer ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer Unique ID'
+		dataType: string
+		lineageTag: f31abbdb-d206-41c7-9317-a3848f51de4d
+		summarizeBy: none
+		sourceColumn: Customer Unique ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 57cd0ebd-057b-45df-9a43-6165f4fae4e5
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: b68a242c-051e-405c-b6ed-5b23ab36fc49
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Customers = m
+		mode: import
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost", "olist"),
+				    clean_customers = Source{[Schema="clean",Item="customers"]}[Data],
+				    #"Kept Analysis Columns" = Table.SelectColumns(clean_customers,{"customer_id", "customer_unique_id", "customer_city", "customer_state"}),
+				    #"Kept Model Names" = Table.RenameColumns(#"Kept Analysis Columns",{{"customer_id", "Customer ID"}, {"customer_unique_id", "Customer Unique ID"}, {"customer_city", "City"}, {"customer_state", "State"}})
+				in
+				    #"Kept Model Names"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

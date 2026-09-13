@@ -1,0 +1,55 @@
+table Sellers
+	lineageTag: ea02f184-2690-4edd-a507-a1e385809c5d
+
+	column 'Seller ID'
+		dataType: string
+		isHidden
+		lineageTag: 2fcd028a-5599-4526-a328-a2ea0809ba6c
+		summarizeBy: none
+		sourceColumn: Seller ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: a3895aa3-1046-4faf-bfb3-19e2b2eb24d8
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: ef228f3d-4f53-4b1e-b9e1-c4bdde8e7274
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Seller Code'
+		dataType: string
+		lineageTag: c1280775-8a1d-4d25-87a0-5d0f174979c2
+		summarizeBy: none
+		sourceColumn: Seller Code
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Sellers = m
+		mode: import
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost", "olist"),
+				    clean_sellers = Source{[Schema="clean",Item="sellers"]}[Data],
+				    #"Kept Analysis Columns" = Table.SelectColumns(clean_sellers,{"seller_id", "seller_city", "seller_state"}),
+				    #"Kept Model Names" = Table.RenameColumns(#"Kept Analysis Columns",{{"seller_id", "Seller ID"}, {"seller_city", "City"}, {"seller_state", "State"}}),
+				    #"Added Seller Code Column" = Table.AddColumn(#"Kept Model Names", "Seller Code", each Text.Upper(Text.Start([Seller ID], 8))),
+				    #"Typed Seller Code to Text" = Table.TransformColumnTypes(#"Added Seller Code Column",{{"Seller Code", type text}})
+				in
+				    #"Typed Seller Code to Text"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

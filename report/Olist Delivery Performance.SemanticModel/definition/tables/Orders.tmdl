@@ -1,0 +1,199 @@
+table Orders
+	lineageTag: df97b741-7ac0-4731-b530-015d1f6eb612
+
+	column 'Order ID'
+		dataType: string
+		isHidden
+		lineageTag: 287bdd65-9ab7-47bc-8214-bf5df51b213e
+		summarizeBy: none
+		sourceColumn: Order ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer ID'
+		dataType: string
+		isHidden
+		lineageTag: dcb2413f-3365-4f10-a3ab-99ec69c92de0
+		summarizeBy: none
+		sourceColumn: Customer ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Purchase Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: f5cd5317-aecd-42ed-8841-5b50bbffcbfd
+		summarizeBy: none
+		sourceColumn: Purchase Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Approve Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: a1d134f3-72f7-48b7-b8cb-ef098c91c5c7
+		summarizeBy: none
+		sourceColumn: Approve Date
+
+		variation Variation
+			isDefault
+			relationship: 8be13b9a-a778-42b4-a43d-55d3158c743f
+			defaultHierarchy: LocalDateTable_031c1529-bb59-4ac4-9753-0dbd628d45ce.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Carrier Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 9acfcf96-ca54-458a-86a3-63408499e9bc
+		summarizeBy: none
+		sourceColumn: Carrier Date
+
+		variation Variation
+			isDefault
+			relationship: 01a31b9e-a653-4afc-bc18-b2cfcac9a5cc
+			defaultHierarchy: LocalDateTable_12f27896-c1f8-4515-9f23-82a1a7bde863.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Delivery Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 2ac2e6a6-19c3-44cb-8e74-747859ced6b1
+		summarizeBy: none
+		sourceColumn: Delivery Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Estimated Delivery Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: bd01b3e5-4b60-4225-b088-bfdf5a1f773c
+		summarizeBy: none
+		sourceColumn: Estimated Delivery Date
+
+		variation Variation
+			isDefault
+			relationship: fb85bde9-dc0a-41be-80dc-e4a99434e0b4
+			defaultHierarchy: LocalDateTable_e759bfd1-1f00-401e-89ba-4839da8bf888.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Days Late'
+		dataType: int64
+		formatString: 0
+		lineageTag: a6d20d99-80c5-4d4e-872a-ce1d5b41c201
+		summarizeBy: sum
+		sourceColumn: Days Late
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Late'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3f8a99e0-ae17-450f-8788-429911efbc12
+		summarizeBy: none
+		sourceColumn: Is Late
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Review Score'
+		dataType: int64
+		formatString: 0
+		lineageTag: 3a568b8d-9972-4301-8aee-582db2c80eed
+		summarizeBy: sum
+		sourceColumn: Review Score
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Lateness Bucket'
+		dataType: string
+		lineageTag: fff2be39-9a74-49ef-8b4e-58967cf89238
+		summarizeBy: none
+		sourceColumn: Lateness Bucket
+		sortByColumn: 'Bucket Order'
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Bucket Order'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5fc6fd29-6547-48b8-87e5-66303d5d8064
+		summarizeBy: sum
+		sourceColumn: Bucket Order
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Orders = m
+		mode: import
+		source = ```
+				let
+				    Source = PostgreSQL.Database("localhost", "olist"),
+				    clean_orders = Source{[Schema="clean",Item="orders"]}[Data],
+				    #"Kept Analysis Columns" = Table.SelectColumns(clean_orders,{"order_id", "customer_id", "order_status", "order_purchase_timestamp", "order_approved_at", "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date", "order_status_group"}),
+				    // filtered order_status to keep delivered orders
+				    #"Kept Delivered Rows" = Table.SelectRows(#"Kept Analysis Columns", each ([order_status] = "delivered")),
+				    // delivered date - estimate date (positive if late, 0 if on time and negative if early)
+				    #"Added days_late" = Table.AddColumn(#"Kept Delivered Rows", "days_late", each if [order_delivered_customer_date] = null then null
+				else Duration.Days(
+				    Date.From([order_delivered_customer_date])
+				    - Date.From([order_estimated_delivery_date])
+				)),
+				    #"Typed days_late to Whole Number" = Table.TransformColumnTypes(#"Added days_late",{{"days_late", Int64.Type}}),
+				    // Boolean column for rate. True if is_late, false if not and null if delivery date not available
+				    #"Added is_late" = Table.AddColumn(#"Typed days_late to Whole Number", "is_late", each if [days_late] = null then null 
+				else [days_late] > 0),
+				    #"Typed is_late to True/False" = Table.TransformColumnTypes(#"Added is_late",{{"is_late", type logical}}),
+				    // order_status and order_status_group have only one value (delivered) so we remove them.
+				    #"Removed Constant Columns" = Table.SelectColumns(#"Typed is_late to True/False",{"order_id", "customer_id", "order_purchase_timestamp", "order_approved_at", "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date", "days_late", "is_late"}),
+				    #"Kept Model Names" = Table.RenameColumns(#"Removed Constant Columns",{{"order_id", "Order ID"}, {"customer_id", "Customer ID"}, {"order_purchase_timestamp", "Purchase Date"}, {"order_approved_at", "Approve Date"}, {"order_delivered_carrier_date", "Carrier Date"}, {"order_delivered_customer_date", "Delivery Date"}, {"order_estimated_delivery_date", "Estimated Delivery Date"}, {"days_late", "Days Late"}, {"is_late", "Is Late"}}),
+				    #"Merged Review Score" = Table.NestedJoin(#"Kept Model Names", {"Order ID"}, Reviews, {"Order ID"}, "Reviews", JoinKind.LeftOuter),
+				    #"Expanded Reviews" = Table.ExpandTableColumn(#"Merged Review Score", "Reviews", {"Review Score"}, {"Review Score"}),
+				    // We connect this table to Date table via these two columns so they need to be Date type and not Date/Time type. (Typed other Date/Time columns too for consistency.)
+				    #"Typed Purchase/Delivery Date to Date" = Table.TransformColumnTypes(#"Expanded Reviews",{{"Purchase Date", type date}, {"Approve Date", type date}, {"Delivery Date", type date}, {"Carrier Date", type date}, {"Estimated Delivery Date", type date}}),
+				    #"Added Lateness Bucket Column" = Table.AddColumn(#"Typed Purchase/Delivery Date to Date", "Lateness Bucket", each if [Days Late] = null then null
+				else if [Days Late] <= -7 then "7+ days early"
+				else if [Days Late] < 0 then "1-6 days early"
+				else if [Days Late] = 0 then "On the day"
+				else if [Days Late] <= 3 then "1-3 days late"
+				else if [Days Late] <= 7 then "4-7 days late"
+				else if [Days Late] <= 14 then "8-14 days late"
+				else "15+ days late"),
+				    #"Reordered Columns" = Table.ReorderColumns(#"Added Lateness Bucket Column",{"Order ID", "Customer ID", "Purchase Date", "Approve Date", "Carrier Date", "Delivery Date", "Estimated Delivery Date", "Days Late", "Lateness Bucket", "Is Late", "Review Score"}),
+				    #"Typed Lateness Bucket to Text" = Table.TransformColumnTypes(#"Reordered Columns",{{"Lateness Bucket", type text}}),
+				    #"Added Bucket Order Column" = Table.AddColumn(#"Typed Lateness Bucket to Text", "Bucket Order", each if [Days Late] = null then null
+				else if [Days Late] <= -7 then 1
+				else if [Days Late] < 0 then 2
+				else if [Days Late] = 0 then 3
+				else if [Days Late] <= 3 then 4
+				else if [Days Late] <= 7 then 5
+				else if [Days Late] <= 14 then 6
+				else 7),
+				    #"Typed Bucket Order to Whole Number" = Table.TransformColumnTypes(#"Added Bucket Order Column",{{"Bucket Order", Int64.Type}})
+				in
+				    #"Typed Bucket Order to Whole Number"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

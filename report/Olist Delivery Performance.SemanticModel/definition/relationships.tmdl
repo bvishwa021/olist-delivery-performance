@@ -1,0 +1,40 @@
+relationship 8be13b9a-a778-42b4-a43d-55d3158c743f
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Orders.'Approve Date'
+	toColumn: LocalDateTable_031c1529-bb59-4ac4-9753-0dbd628d45ce.Date
+
+relationship 01a31b9e-a653-4afc-bc18-b2cfcac9a5cc
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Orders.'Carrier Date'
+	toColumn: LocalDateTable_12f27896-c1f8-4515-9f23-82a1a7bde863.Date
+
+relationship fb85bde9-dc0a-41be-80dc-e4a99434e0b4
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Orders.'Estimated Delivery Date'
+	toColumn: LocalDateTable_e759bfd1-1f00-401e-89ba-4839da8bf888.Date
+
+relationship AutoDetected_f7a79aeb-ed37-4353-ba11-7b2f8b9b9efe
+	fromColumn: 'Order Items'.'Product ID'
+	toColumn: Products.'Product ID'
+
+relationship AutoDetected_abc02c2d-4413-48da-9cf5-25afd810949b
+	fromColumn: 'Order Items'.'Seller ID'
+	toColumn: Sellers.'Seller ID'
+
+relationship fddd8510-d1d9-7abc-28f2-6ff1647ad0ac
+	fromColumn: Orders.'Customer ID'
+	toColumn: Customers.'Customer ID'
+
+relationship 23d77f6b-4036-0d5c-7db9-15a0bd9f9a11
+	fromColumn: 'Order Items'.'Order ID'
+	toColumn: Orders.'Order ID'
+
+relationship c76f8920-cc35-5588-66da-0ecf0ec76697
+	fromColumn: Orders.'Purchase Date'
+	toColumn: Date.Date
+
+relationship 13cc285e-72bb-68ee-cdc9-c61302f1636e
+	isActive: false
+	fromColumn: Orders.'Delivery Date'
+	toColumn: Date.Date
+
